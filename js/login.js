@@ -1,4 +1,12 @@
 (function initLogin() {
+  const currentUrl = window.location.href;
+
+    // Check if the user lands on the standard /Login or the deep /Login/login page
+    if (currentUrl.includes('/Login/login')) {
+        // Redirect cleanly to the root domain without breaking browser history
+        window.location.replace('https://flexstudent.nu.edu.pk/');
+    }
+  
   const currentPath = window.location.pathname.toLowerCase();
   if (!currentPath.includes("login") && window.location.pathname !== "/") {
     console.log("not a login page, exiting. Path was:", currentPath);
@@ -13,7 +21,7 @@
     const passwordInput = document.querySelector('input[name="password"]');
     const rememberInput = document.querySelector('input[name="remember"]');
     const recaptchaEl   = document.querySelector(".g-recaptcha");
-    const formAction    = document.querySelector("#frmlogin")?.action || "/Login/login";
+    const formAction    = document.querySelector("#frmlogin")?.action || "/";
 
     const savedUser    = usernameInput?.value || "";
     const savedPass    = passwordInput?.value || "";
