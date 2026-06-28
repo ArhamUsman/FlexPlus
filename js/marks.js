@@ -15,9 +15,17 @@
       const form =
         document.querySelector('form[action*="StudentMarks"]') ||
         document.querySelector("form");
-      if (!form) return null;
+      if (!form) {
+        console.log("form is null");
+        return null;}
+      console.log("Extracting form");
       const select = form.querySelector("select");
-      if (!select) return null;
+      
+      if (!select) {
+        console.log("select is null");
+        return null;
+      }
+      console.log("Extracting selected");
       return {
         action: form.action,
         method: form.method,
@@ -94,14 +102,15 @@
     //==================
     //dom scraping
     const scrapeData = () => {
-      const errorAlert = document.querySelector(".alert-danger");
-      if (errorAlert && errorAlert.innerText.includes("No Record"))
-        return { error: "No records found." };
-
+      const errorAlert = document.querySelector(".m-alert.alert-danger") || document.querySelector(".alert-danger");
+      if (errorAlert && errorAlert.innerText.includes("No Record")) {
+        return { error: "No records found.", courses: [] };
+      }
       const courses = [];
       const tabs = document.querySelectorAll(".nav-tabs .nav-link");
-
-      if (tabs.length === 0) return { error: null, courses: [] };
+      if (tabs.length === 0) {
+        return { error: "no records found", courses: [] }
+      };
 
       tabs.forEach((tab) => {
         const courseCode = tab.innerText.trim();
@@ -195,15 +204,20 @@
             classMax: parseFloat(courseTotalMax.toFixed(2)),
           },
         });
+        
       });
 
       return { error: null, courses };
     };
 
     const semesterData = extractSemesterData();
+    console.log("Semester Data", semesterData);
     const { error, courses } = scrapeData();
+    console.log("Errors ", error);
+    console.log("Courses ", courses);
+    
     const marksState = {
-      activeCourseId: courses[0]?.id || null,
+      activeCourseId: courses?.[0]?.id || null,
       categoryModes: {},
       categoryCollapsed: {},
     };
@@ -258,10 +272,13 @@
     };
 
     const buildCourseContent = () => {
-      if (error) return `<div class="empty-state"><h3>${error}</h3></div>`;
-      if (courses.length === 0)
-        return `<div class="empty-state"><h3>No Data</h3></div>`;
-
+      if (error || courses.length === 0) {
+        return `
+          <div class="courses-wrapper">
+            <div class="empty-card"><h3>No records found.</h3></div>
+          </div>`;
+      }
+      
       //static threshold
       const gradeThresholds = [
         { val: 50, l: "D" },
@@ -462,6 +479,7 @@
     const finalHTML = `${buildSemesterForm()}${buildCourseTabs()}<div class="courses-wrapper">${buildCourseContent()}</div>`;
     window.FlexUtils.renderInternalPage(finalHTML, "Marks & Grades");
 
+    if (error==null){
     //tab switching logic
     const tabsContainer = document.querySelector(".course-tabs-container");
     if (tabsContainer) {
@@ -507,9 +525,16 @@
         const isCollapsed = group.classList.toggle("collapsed");
         if (categoryKey) marksState.categoryCollapsed[categoryKey] = isCollapsed;
       });
-    }
-  } catch (e) {
+    }}
+  } 
+  catch (e) {
+    console.log("Error");
     console.error("Marks Page Error: ", e);
-    document.body.classList.remove("modern-active");
+    const crashHTML = `
+      ${buildSemesterForm(semesterData)}
+      <div class="courses-wrapper">
+        <div class="empty-card"><h3>No records found.</h3></div>
+      </div>`;
+    window.FlexUtils.renderInternalPage(crashHTML, "Marks & Grades");
   }
 })();
