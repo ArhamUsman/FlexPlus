@@ -8,97 +8,101 @@
   try {
     console.log("fee challan script loaded");
 
-    const originalTable = document.querySelector(".m-section__content table table",);
-    if (!originalTable) {
-      console.warn("Challan table not found");
-      return;
+    const originalTable = document.querySelector(".m-section__content table table");
+    const rows = [];
+
+    if (originalTable) {
+      originalTable.querySelectorAll("tbody tr").forEach((row) => {
+        const cells = row.cells;
+        if (cells.length >= 6) {
+          const onclickStr = cells[5].querySelector("a")?.getAttribute("onclick") || "";
+          const idMatch = onclickStr.match(/\d+/);
+          const challanId = idMatch ? idMatch[0] : null;
+
+          if (challanId) {
+            rows.push({
+              amount: cells[1].innerText.trim(),
+              generated: cells[2].innerText.trim(),
+              due: cells[3].innerText.trim(),
+              status: cells[4].innerText.trim(),
+              challanId: challanId,
+            });
+          }
+        }
+      });
+    } else {
+      console.log("No challan table present on page - assuming empty state.");
     }
 
-    const rows = [];
-    originalTable.querySelectorAll("tbody tr").forEach((row) => {
-      const cells = row.cells;
-      if (cells.length >= 6) {
-        const onclickStr =
-          cells[5].querySelector("a")?.getAttribute("onclick") || "";
-        const idMatch = onclickStr.match(/\d+/);
-        const challanId = idMatch ? idMatch[0] : null;
-
-        if (challanId) {
-          rows.push({
-            amount: cells[1].innerText.trim(),
-            generated: cells[2].innerText.trim(),
-            due: cells[3].innerText.trim(),
-            status: cells[4].innerText.trim(),
-            challanId: challanId,
-          });
-        }
-      }
-    });
 
     const instructionsRaw =
       document.querySelector('td[style*="width:40%"]')?.innerHTML ||
       "No instructions available.";
 
-    const finalHTML = `
-            <div class="dashboard-wrapper challan-view">
-                <div class="dash-card no-hover challan-main-card">
-                    <div class="challan-card-header">
-                        <div class="header-left">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
-                            <h3 class="card-heading">Student Challans</h3>
-                        </div>
-                        <button id="btnToggleInstructions" class="instr-toggle-btn">
-                            📘 <span class="btn-text">Payment Instructions</span>
-                        </button>
-                    </div>
-                    
-                    <div class="table-responsive"> <table class="modern-table"> <thead>
-            <tr>
+    let mainContent = "";
+    if (rows.length > 0) {
+      mainContent = `
+        <div class="table-responsive"> 
+          <table class="modern-table"> 
+            <thead>
+              <tr>
                 <th class="scroll-cell">Amount</th>
                 <th class="scroll-cell">Status</th>
                 <th class="scroll-cell">Generated</th>
                 <th class="scroll-cell">Due Date</th>
                 <th class="scroll-cell text-right">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${rows
-                .map(
-                (r) => `
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((r) => `
                 <tr>
-                    <td class="scroll-cell amount-cell">${r.amount}</td>
-                    <td class="scroll-cell">
-                        <span class="status-badge valid">${r.status}</span>
-                    </td>
-                    <td class="scroll-cell text-muted">${r.generated}</td>
-                    <td class="scroll-cell text-danger font-weight-bold">${r.due}</td>
-                    <td class="scroll-cell text-right">
-                        <div class="btn-group-modern">
-                            <button class="btn-view action-trigger" data-id="${r.challanId}" data-type="view">View</button>
-                            <button class="btn-print action-trigger" data-id="${r.challanId}" data-type="print">Print</button>
-                        </div>
-                    </td>
-                </tr>
-                `,
-                )
-                .join("")}
-        </tbody>
-    </table>
-</div>
-                </div>
+                  <td class="scroll-cell amount-cell">${r.amount}</td>
+                  <td class="scroll-cell">
+                    <span class="status-badge valid">${r.status}</span>
+                  </td>
+                  <td class="scroll-cell text-muted">${r.generated}</td>
+                  <td class="scroll-cell text-danger font-weight-bold">${r.due}</td>
+                  <td class="scroll-cell text-right">
+                    <div class="btn-group-modern">
+                      <button class="btn-view action-trigger" data-id="${r.challanId}" data-type="view">View</button>
+                      <button class="btn-print action-trigger" data-id="${r.challanId}" data-type="print">Print</button>
+                    </div>
+                  </td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    } else {
+      mainContent = `<div class="empty-card"><h3>No records found.</h3></div>`;
+    }
 
-                <div id="instructionDrawer" class="outer-drawer">
-                    <div class="drawer-content">
-                        <div class="drawer-header-title">Payment Guidelines</div>
-                        <div class="instructions-content legacy-theme-fix">
-                            ${instructionsRaw}
-                        </div>
+    const finalHTML = `
+        <div class="dashboard-wrapper challan-view">
+            <div class="dash-card no-hover challan-main-card">
+                <div class="challan-card-header">
+                    <div class="header-left">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2"/></svg>
+                        <h3 class="card-heading">Student Challans</h3>
+                    </div>
+                    <button id="btnToggleInstructions" class="instr-toggle-btn">
+                        📘 <span class="btn-text">Payment Instructions</span>
+                    </button>
+                </div>
+                ${mainContent}
+            </div>
+
+            <div id="instructionDrawer" class="outer-drawer">
+                <div class="drawer-content">
+                    <div class="drawer-header-title">Payment Guidelines</div>
+                    <div class="instructions-content legacy-theme-fix">
+                        ${instructionsRaw}
                     </div>
                 </div>
             </div>
-        `;
+        </div>`;
 
     window.FlexUtils.renderInternalPage(finalHTML, "Challan");
+
 
     const toggleBtn = document.getElementById("btnToggleInstructions");
     const drawer = document.getElementById("instructionDrawer");
